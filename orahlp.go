@@ -39,7 +39,7 @@ type intType struct{}
 
 func (intType) String() string { return "Int64" }
 func (intType) ConvertValue(v any) (driver.Value, error) {
-	if logger := getLogger(context.TODO()); logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+	if logger := getLogger(context.Background()); logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 		logger.Debug("ConvertValue Int64", "value", v)
 	}
 	switch x := v.(type) {
@@ -91,7 +91,7 @@ type floatType struct{}
 
 func (floatType) String() string { return "Float64" }
 func (floatType) ConvertValue(v any) (driver.Value, error) {
-	if logger := getLogger(context.TODO()); logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+	if logger := getLogger(context.Background()); logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 		logger.Debug("ConvertValue Float64", "value", v)
 	}
 	switch x := v.(type) {
@@ -137,7 +137,7 @@ type numType struct{}
 
 func (numType) String() string { return "Num" }
 func (numType) ConvertValue(v any) (driver.Value, error) {
-	if logger := getLogger(context.TODO()); logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+	if logger := getLogger(context.Background()); logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 		logger.Debug("ConvertValue Num", "value", v)
 	}
 	switch x := v.(type) {

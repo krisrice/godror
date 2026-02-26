@@ -193,6 +193,7 @@ type RowEvent struct {
 type Subscription struct {
 	conn      *conn
 	dpiSubscr *C.dpiSubscr
+	subscrID  *C.uint64_t // C.malloc'd context pointer; freed in Close()
 	callback  func(Event)
 	ID        uint64
 }
@@ -249,9 +250,10 @@ func (c *conn) NewSubscription(name string, cb func(Event), options ...Subscript
 	subscriptionsID++
 	subscr.ID = subscriptionsID
 	subscriptions[subscr.ID] = &subscr
+	localID := subscriptionsID // capture before unlock to avoid race
 	subscriptionsMu.Unlock()
 	subscrID := (*C.uint64_t)(C.malloc(8))
-	*subscrID = C.uint64_t(subscriptionsID)
+	*subscrID = C.uint64_t(localID)
 	params.callbackContext = unsafe.Pointer(subscrID)
 
 	dpiSubscr := (*C.dpiSubscr)(C.malloc(C.sizeof_void))
@@ -260,6 +262,10 @@ func (c *conn) NewSubscription(name string, cb func(Event), options ...Subscript
 		return C.dpiConn_subscribe(c.dpiConn, params, (**C.dpiSubscr)(unsafe.Pointer(&dpiSubscr)))
 	}); err != nil {
 		C.free(unsafe.Pointer(dpiSubscr))
+		C.free(unsafe.Pointer(subscrID))
+		subscriptionsMu.Lock()
+		delete(subscriptions, subscr.ID)
+		subscriptionsMu.Unlock()
 		err = fmt.Errorf("newSubscription: %w", err)
 		if strings.Contains(errors.Unwrap(err).Error(), "DPI-1065:") {
 			err = fmt.Errorf("specify \"enableEvents=1\" connection parameter on connection to be able to use subscriptions: %w", err)
@@ -267,6 +273,7 @@ func (c *conn) NewSubscription(name string, cb func(Event), options ...Subscript
 		return nil, err
 	}
 	subscr.dpiSubscr = dpiSubscr
+	subscr.subscrID = subscrID
 	return &subscr, nil
 }
 
@@ -295,7 +302,7 @@ func (s *Subscription) Register(qry string, params ...any) error {
 	if C.dpiStmt_getSubscrQueryId(dpiStmt, &queryID) == C.DPI_FAILURE {
 		return fmt.Errorf("getSubscrQueryId: %w", s.conn.getError())
 	}
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 	if logger != nil {
 		logger.Debug("subscribed", "query", qry, "id", queryID)
 	}
@@ -312,9 +319,14 @@ func (s *Subscription) Close() error {
 	subscriptionsMu.Unlock()
 	dpiSubscr := s.dpiSubscr
 	conn := s.conn
+	subscrID := s.subscrID
 	s.conn = nil
 	s.dpiSubscr = nil
+	s.subscrID = nil
 	s.callback = nil
+	if subscrID != nil {
+		C.free(unsafe.Pointer(subscrID))
+	}
 	if dpiSubscr == nil || conn == nil || conn.dpiConn == nil {
 		return nil
 	}

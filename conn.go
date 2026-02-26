@@ -149,7 +149,7 @@ func (c *conn) Break() error {
 	}
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 	if logger != nil {
 		logger.Debug("Break", "dpiConn", c.dpiConn)
 	}
@@ -433,7 +433,7 @@ func (c *conn) newVar(vi varInfo) (*C.dpiVar, []C.dpiData, error) {
 	}
 	var dataArr *C.dpiData
 	var v *C.dpiVar
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 	if logger != nil {
 		logger.Debug("dpiConn_newVar", "conn", c.dpiConn, "typ", int(vi.Typ), "natTyp", int(vi.NatTyp), "sliceLen", vi.SliceLen, "bufSize", vi.BufSize, "isArray", isArray, "objType", vi.ObjectType, "v", v)
 	}
@@ -496,7 +496,7 @@ func (c *conn) init(ctx context.Context, isNew bool, onInit func(ctx context.Con
 }
 
 func (c *conn) initTZ() error {
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 	if logger != nil {
 		logger.Debug("initTZ", "tzValid", c.tzValid, "paramsTZ", c.params.Timezone)
 	}
@@ -626,7 +626,7 @@ func maybeBadConn(err error, c *conn) error {
 		return nil
 	}
 	cl := func() {}
-	ctx := context.TODO()
+	ctx := context.Background()
 	logger := getLogger(ctx)
 	if c != nil {
 		cl = func() {
@@ -717,7 +717,10 @@ func (c *conn) setTraceTag(tt TraceTag) error {
 		return nil
 	}
 	todo := make([][2]string, 0, 5)
-	currentTT, _ := c.currentTT.Load().(TraceTag)
+	var currentTT TraceTag
+	if v, ok := c.currentTT.Load().(TraceTag); ok {
+		currentTT = v
+	}
 	for nm, vv := range map[string][2]string{
 		"action":     {currentTT.Action, tt.Action},
 		"module":     {currentTT.Module, tt.Module},
@@ -973,7 +976,7 @@ func (c *conn) IsValid() bool {
 	if dpiConnOK {
 		dpiConnOK = c.isHealthy()
 	}
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 	if logger != nil {
 		logger.Debug("IsValid", "connOK", dpiConnOK, "released", released, "pooled", pooled, "tzOK", tzOK)
 	}

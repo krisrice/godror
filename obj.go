@@ -51,7 +51,7 @@ var ErrNoSuchKey = errors.New("no such key")
 // GetAttribute gets the i-th attribute into data.
 func (O *Object) GetAttribute(data *Data, name string) error {
 	if O == nil {
-		panic("nil Object")
+		return errors.New("nil Object")
 	}
 	attr, ok := O.Attributes[name]
 	if !ok {
@@ -75,7 +75,7 @@ func (O *Object) GetAttribute(data *Data, name string) error {
 	}); err != nil {
 		return fmt.Errorf("getAttributeValue(%q, obj=%s, attr=%+v, typ=%d): %w", name, O.Name, attr.dpiObjectAttr, data.NativeTypeNum, err)
 	}
-	if logger := getLogger(context.TODO()); logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+	if logger := getLogger(context.Background()); logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 		logger.Debug("getAttributeValue", "dpiObject", fmt.Sprintf("%p", O.dpiObject),
 			attr.Name, fmt.Sprintf("%p", attr.dpiObjectAttr),
 			"nativeType", data.NativeTypeNum, "oracleType", attr.OracleTypeNum,
@@ -99,7 +99,7 @@ func (O *Object) SetAttribute(name string, data *Data) error {
 		}
 		// name = try
 	}
-	// ctx := context.TODO()
+	// ctx := context.Background()
 	// logger := getLogger(ctx)
 	// if logger != nil {
 	// 	logger = logger.With("object", O.Name, "name", name)
@@ -126,7 +126,7 @@ func (O *Object) SetAttribute(name string, data *Data) error {
 		C.dpiObjectAttr_getInfo(attr.dpiObjectAttr, &info)
 		return fmt.Errorf("dpiObject_setAttributeValue NativeTypeNum=%d ObjectType=%v typeInfo=%+v: %w", data.NativeTypeNum, data.ObjectType, info.typeInfo, err)
 	}
-	// if logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+	// if logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 	// 	logger.Debug("setAttributeValue", "dpiObject", fmt.Sprintf("%p", O.dpiObject),
 	// 		attr.Name, fmt.Sprintf("%p", attr.dpiObjectAttr),
 	// 		"nativeType", data.NativeTypeNum, "oracleType", attr.OracleTypeNum,
@@ -258,8 +258,8 @@ func (O *Object) Close() error {
 		return nil
 	}
 	// fmt.Printf("Object.Close0 %p\n", O.dpiObject)
-	logger := getLogger(context.TODO())
-	if logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+	logger := getLogger(context.Background())
+	if logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 		logger.Debug("Object.Close", "object", fmt.Sprintf("%p", O.dpiObject))
 	}
 
@@ -282,7 +282,7 @@ func (O *Object) Close() error {
 			if obj == nil || obj.dpiObject == nil {
 				continue
 			}
-			if logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+			if logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 				logger.Debug("ObjectCollection.Close close item", "idx", curr, "object", fmt.Sprintf("%p", obj))
 			}
 			// fmt.Printf("Close obj=%p\n", obj.dpiObject)
@@ -307,7 +307,7 @@ func (O *Object) Close() error {
 			if obj == nil {
 				return nil
 			}
-			if logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+			if logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 				logger.Debug("Object.Close close sub-object", "attribute", a.Name, "object", fmt.Sprintf("%p", obj))
 			}
 
@@ -341,7 +341,7 @@ func (O *Object) AsMap(recursive bool) (map[string]any, error) {
 	if O == nil || O.dpiObject == nil {
 		return nil, nil
 	}
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 	m := make(map[string]any, len(O.ObjectType.Attributes))
 	data := scratch.Get()
 	defer scratch.Put(data)
@@ -357,7 +357,7 @@ func (O *Object) AsMap(recursive bool) (map[string]any, error) {
 			d = maybeString(d, ot.ObjectType)
 		}
 		m[a] = d
-		if logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+		if logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 			logger.Debug("AsMap", "attribute", a, "data", fmt.Sprintf("%#v", d), "type", fmt.Sprintf("%T", d), "recursive", recursive)
 		}
 		if !recursive {
@@ -487,7 +487,7 @@ func (O ObjectCollection) FromSlice(v []any) error {
 	if O.dpiObject == nil {
 		return nil
 	}
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 
 	data := scratch.Get()
 
@@ -512,14 +512,14 @@ func (O *Object) FromMap(recursive bool, m map[string]any) error {
 	if O == nil || O.dpiObject == nil {
 		return nil
 	}
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 
 	for a, ot := range O.ObjectType.Attributes {
 		v := m[a]
 		if v == nil {
 			continue
 		}
-		if logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+		if logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 			logger.Debug("FromMap", "attribute", a, "value", v, "type", fmt.Sprintf("%T", v), "recursive", recursive, "ot", ot.ObjectType)
 		}
 		if ot.ObjectType.CollectionOf != nil { // Collection case
@@ -595,7 +595,7 @@ func (O *Object) FromJSON(dec *json.Decoder) error {
 		return err
 	}
 	wantDelim := tok == json.Delim('{')
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 	first := true
 	for {
 		if first && wantDelim || !first {
@@ -618,7 +618,7 @@ func (O *Object) FromJSON(dec *json.Decoder) error {
 				k = k2
 			}
 		}
-		if logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+		if logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 			logger.Debug("attribute", "k", k, "a", a)
 		}
 		if !ok {
@@ -676,10 +676,10 @@ func (O ObjectCollection) FromMapSlice(recursive bool, m []map[string]any) error
 	if O.Object == nil || O.dpiObject == nil {
 		return nil
 	}
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 
 	for i, o := range m {
-		if logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+		if logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 			logger.Debug("FromMapSlice", "index", i, "recursive", recursive)
 		}
 		elt, err := O.ObjectType.CollectionOf.NewObject()
@@ -886,7 +886,7 @@ func (O ObjectCollection) GetItem(data *Data, i int) error {
 		return ErrNotCollection
 	}
 	if data == nil {
-		panic("data cannot be nil")
+		return errors.New("data cannot be nil")
 	}
 
 	runtime.LockOSThread()
@@ -1163,7 +1163,7 @@ func (t *ObjectType) NewObject() (*Object, error) {
 	if t == nil {
 		return nil, errNilObjectType
 	}
-	ctx := context.TODO()
+	ctx := context.Background()
 	logger := getLogger(ctx)
 	if logger != nil && logger.Enabled(ctx, slog.LevelDebug) {
 		logger.Debug("NewObject", "name", t.Name)
@@ -1224,7 +1224,7 @@ func (t *ObjectType) Close() error {
 		return nil
 	}
 
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 	if cof != nil {
 		if err := cof.Close(); err != nil && logger != nil {
 			logger.Error("ObjectType.Close CollectionOf.Close", "name", t.Name, "collectionOf", cof.Name, "error", err)
@@ -1237,7 +1237,7 @@ func (t *ObjectType) Close() error {
 		}
 	}
 
-	if logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+	if logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 		logger.Debug("ObjectType.Close", "name", t.Name)
 	}
 	if err := drv.checkExec(func() C.int {
@@ -1274,7 +1274,7 @@ func wrapObject(c *conn, objectType *C.dpiObjectType, object *C.dpiObject) (*Obj
 
 func (t *ObjectType) init(cache map[string]*ObjectType) error {
 	if t.drv == nil {
-		panic("conn is nil")
+		return errors.New("conn is nil")
 	}
 	if t.Name != "" && t.Attributes != nil && t.NativeTypeNum != 0 {
 		return nil
@@ -1313,7 +1313,7 @@ func (t *ObjectType) init(cache map[string]*ObjectType) error {
 			C.dpiObjectType_addRef(t.CollectionOf.dpiObjectType)
 		}
 	}
-	ctx := context.TODO()
+	ctx := context.Background()
 	logger := getLogger(ctx)
 	if logger != nil && logger.Enabled(ctx, slog.LevelDebug) {
 		logger.Debug("ObjectType.init", "schema", t.Schema, "package", t.PackageName, "name", t.Name, "isColl", info.isCollection, "numAttrs", info.numAttributes, "info", fmt.Sprintf("%+v", info))

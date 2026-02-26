@@ -341,7 +341,7 @@ func (j JSON) GetValue(opts JSONOption) (any, error) {
 	} else {
 		return val, nil
 	}
-	if logger := getLogger(context.TODO()); logger != nil {
+	if logger := getLogger(context.Background()); logger != nil {
 		logger.Error("JSON.GetValue", "error", err)
 	}
 	return nil, err
@@ -357,7 +357,7 @@ func (j JSON) String() string {
 	if err == nil {
 		return s
 	}
-	if logger := getLogger(context.TODO()); logger != nil {
+	if logger := getLogger(context.Background()); logger != nil {
 		logger.Error("JSON.String", "error", err)
 	}
 	return ""
@@ -432,11 +432,19 @@ func (j JSONScalar) GetValue() (val any, err error) {
 	} else {
 		val = d.Get()
 		if j.dpiJsonNode.oracleTypeNum == C.DPI_ORACLE_TYPE_JSON_OBJECT {
-			jobj := val.(JSONObject)
+			jobj, ok := val.(JSONObject)
+			if !ok {
+				err = fmt.Errorf("expected JSONObject, got %T", val)
+				return
+			}
 			jobj.stringOption = j.stringOption
 			val, err = jobj.GetValue()
 		} else if j.dpiJsonNode.oracleTypeNum == C.DPI_ORACLE_TYPE_JSON_ARRAY {
-			jarr := val.(JSONArray)
+			jarr, ok := val.(JSONArray)
+			if !ok {
+				err = fmt.Errorf("expected JSONArray, got %T", val)
+				return
+			}
 			jarr.stringOption = j.stringOption
 			val, err = jarr.GetValue()
 		} else {

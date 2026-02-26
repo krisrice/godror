@@ -325,7 +325,7 @@ func (d *drv) init(configDir, libDir string) error {
 			ctxParams.oracleClientLibDir = C.CString(libDir)
 		}
 	}
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 	if logger != nil {
 		logger.Debug("dpiContext_createWithParams", "params", ctxParams)
 	}
@@ -493,7 +493,11 @@ func (d *drv) createConn(pool *connPool, P commonAndConnParams) (*conn, bool, er
 				cleanup()
 			}
 			if c != nil && c.dpiConn != nil {
-				fmt.Printf("ERROR: conn %p of createConn is not Closed!\n", c)
+				if logger := getLogger(context.Background()); logger != nil {
+					logger.Error("conn of createConn is not Closed!", "conn", fmt.Sprintf("%p", c))
+				} else {
+					fmt.Printf("ERROR: conn %p of createConn is not Closed!\n", c)
+				}
 				_ = c.closeNotLocking()
 			}
 		})
@@ -505,7 +509,11 @@ func (d *drv) createConn(pool *connPool, P commonAndConnParams) (*conn, bool, er
 				cleanup()
 			}
 			if c != nil && c.dpiConn != nil {
-				fmt.Printf("ERROR: conn %p of createConn is not Closed!\n%s\n", c, stack)
+				if logger := getLogger(context.Background()); logger != nil {
+					logger.Error("conn of createConn is not Closed!", "conn", fmt.Sprintf("%p", c), "stack", string(stack))
+				} else {
+					fmt.Printf("ERROR: conn %p of createConn is not Closed!\n%s\n", c, stack)
+				}
 				_ = c.closeNotLocking()
 			}
 		})
@@ -938,7 +946,7 @@ func (d *drv) createPool(P commonAndPoolParams) (*connPool, error) {
 	// create pool
 	var dp *C.dpiPool
 	logger := P.Logger
-	if logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+	if logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 		logger.Debug("C.dpiPool_create",
 			"user", P.Username,
 			"ConnectString", P.ConnectString,

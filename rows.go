@@ -81,7 +81,7 @@ func (r *rows) Close() error {
 		}
 	}
 	if nextRs != nil {
-		ctx := context.TODO()
+		ctx := context.Background()
 		if logger := getLogger(ctx); logger != nil && logger.Enabled(ctx, slog.LevelDebug) {
 			logger.Debug("rows Close", "nextRs", fmt.Sprintf("%p", nextRs))
 		}
@@ -626,7 +626,7 @@ func (r *rows) Next(dest []driver.Value) error {
 				if logger != nil {
 					logger.Error("Next.getNumQueryColumns", "st", fmt.Sprintf("%p", st.dpiStmt), "error", err)
 				}
-				//C.dpiStmt_release(st.dpiStmt)
+				st.Close()
 				return fmt.Errorf("getNumQueryColumns: %w", err)
 			}
 			st.Lock()
@@ -745,7 +745,7 @@ type directRow struct {
 }
 
 func (dr *directRow) Columns() []string {
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 	if logger != nil {
 		logger.Debug("directRow.Columns")
 	}
@@ -771,7 +771,7 @@ func (dr *directRow) Close() error {
 //
 // Next should return io.EOF when there are no more rows.
 func (dr *directRow) Next(dest []driver.Value) error {
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 	if logger != nil {
 		logger.Debug("directRow.Next", "query", dr.query, "dest", dest)
 	}
@@ -828,13 +828,13 @@ func (r *rows) NextResultSet() error {
 	}
 
 	var n C.uint32_t
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 	if err := r.checkExec(func() C.int { return C.dpiStmt_getNumQueryColumns(st.dpiStmt, &n) }); err != nil {
 		err = fmt.Errorf("getNumQueryColumns: %+v: %w", err, io.EOF)
 		if logger != nil {
 			logger.Error("NextResultSet.getNumQueryColumns", "st", fmt.Sprintf("%p", st.dpiStmt), "error", err)
 		}
-		//C.dpiStmt_release(st.dpiStmt)
+		st.Close()
 		return err
 	}
 	// keep the originam statement for the succeeding NextResultSet calls.

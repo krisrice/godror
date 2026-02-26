@@ -37,7 +37,7 @@ func TokenCallbackHandler(handle C.uintptr_t, accessToken *C.dpiAccessToken) {
 	tokenCB := h.Value().(accessTokenCB)
 	ctx := tokenCB.ctx
 	if ctx == nil {
-		ctx = context.TODO()
+		ctx = context.Background()
 	}
 	logger := getLogger(ctx)
 	if logger != nil && logger.Enabled(ctx, slog.LevelDebug) {

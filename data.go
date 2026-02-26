@@ -159,7 +159,7 @@ func (d *Data) GetInt64() int64 {
 	}
 	//i := C.dpiData_getInt64(&d.dpiData)
 	i := *((*int64)(unsafe.Pointer(&d.dpiData.value)))
-	if logger := getLogger(context.TODO()); logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+	if logger := getLogger(context.Background()); logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 		logger.Debug("GetInt64", "data", d, "p", fmt.Sprintf("%p", d), "i", i)
 	}
 
@@ -393,7 +393,7 @@ type IntervalYM struct {
 
 // Get returns the contents of Data.
 func (d *Data) Get() any {
-	// if logger := getLogger(context.TODO()); logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+	// if logger := getLogger(context.Background()); logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 	// 	 logger.Debug("Get", "data", fmt.Sprintf("%#v", d), "p", fmt.Sprintf("%p", d))
 	// }
 	switch d.NativeTypeNum {
@@ -524,13 +524,13 @@ func (d *Data) Set(v any) error {
 	//d.NativeTypeNum = C.DPI_NATIVE_TYPE_ROWID
 	//d.SetRowid(x)
 	default:
-		if logger := getLogger(context.TODO()); logger != nil && logger.Enabled(context.TODO(), slog.LevelDebug) {
+		if logger := getLogger(context.Background()); logger != nil && logger.Enabled(context.Background(), slog.LevelDebug) {
 			logger.Debug("Set", "data", d, "type", fmt.Sprintf("%T", v))
 		}
 
 		return fmt.Errorf("data Set type %T: %w", v, ErrNotSupported)
 	}
-	logger := getLogger(context.TODO())
+	logger := getLogger(context.Background())
 	if logger != nil {
 		logger.Debug("Set", "data", d)
 	}
